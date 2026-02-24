@@ -4,4 +4,9 @@ app = FastAPI()
 
 @app.get("/")
 async def root():
-    return {"message":"Hello World"}
+    return {"message":"Welcome"}
+
+
+@app.get("/posts")
+async def get_post():
+    return {"data":"This is your posts"}
