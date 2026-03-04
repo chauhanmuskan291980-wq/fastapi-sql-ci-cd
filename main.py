@@ -39,6 +39,12 @@ async def get_post():
     return {"data":my_post}
 
 
+@app.get("/posts/{id}")
+def get_post(id):
+    print(id)
+    return {"Post_details": f"here is Post {id}"}
+
+
 @app.post("/createposts")
 async def create_post(payload:dict = Body(...)):
     print(payload)
