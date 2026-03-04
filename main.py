@@ -22,6 +22,12 @@ def find_posts(id):
     for p in my_post:
         if p["id"] == id:
             return p
+        
+
+def find_index_post(id):
+    for i ,p in enumerate(my_post):
+        if p['id'] == id:
+            return i
 
 @app.get("/")
 async def root():
@@ -73,3 +79,12 @@ def get_post(id:int , resposnse : Response):
         # return {'message':f"post with id: {id} was not found"}
     return {"post_details":post}
 
+
+
+@app.delete("/posts/{id}")
+def delete_post():
+    index = find_index_post(id)
+    my_post.pop(index)
+    return {"message":f"delete the index {index} post from array"}
+
+    
