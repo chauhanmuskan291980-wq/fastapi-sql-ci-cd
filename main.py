@@ -60,7 +60,7 @@ def create_posts(new_post:Post):
     print(new_post.dict())
     return {"data":f"{new_post}"}
 
-@app.post("/postsbydict")
+@app.post("/postsbydict" , status_code= status.HTTP_201_CREATED)
 def create_post_bydict(post:Post):
     post_dict = post.dict()
     post_dict['id'] = randrange(0,1000000)
@@ -87,10 +87,13 @@ def get_post(id:int , resposnse : Response):
 
 
 
-@app.delete("/posts/{id}")
-def delete_post():
+@app.delete("/posts/{id}" , status_code= status.HTTP_204_NO_CONTENT,
+            detail=f"post with id :{id} does not exits")
+def delete_post(id:int):
     index = find_index_post(id)
+    if index == None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     my_post.pop(index)
-    return {"message":f"delete the index {index} post from array"}
+    return  Response(status_code=status.HTTP_204_NO_CONTENT)
 
     
