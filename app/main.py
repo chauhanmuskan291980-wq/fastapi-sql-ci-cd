@@ -5,8 +5,21 @@ from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
+from . import models
+from .databse import engine , sessionLocal
+from sqlalchemy.orm import Session
+
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+def get_db():
+    db = sessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 class Post(BaseModel):
     title: str
@@ -54,7 +67,9 @@ async def get_post():
     posts = cursor.fetchall()
     print(posts)
     return {"data":posts}
-
+@app.get("/sqlalchemy")
+def test_posts(db:Session = Depends(get_db)):
+    return {"status":"success"}
 
 @app.get("/posts/{id}")
 def get_post(id:int):
