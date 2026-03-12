@@ -2,15 +2,29 @@ from fastapi import FastAPI, Body, Response , status , HTTPException
 from pydantic import BaseModel
 from typing import Optional 
 from random import randrange
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import time
 
 app = FastAPI()
 
 class Post(BaseModel):
     title: str
     content:str
-    publish: bool = True
+    published: bool = True
     rating: Optional[int] = None
 
+
+while True:
+ try:
+    conn = psycopg2.connect(host='localhost',database='posts',user='postgres',password='muskan!!!@00$',cursor_factory=RealDictCursor)
+    cursor = conn.cursor()
+    print("Datbase connection was successfull!")
+    break
+ except Exception as error:
+    print("Connecting to databse failed ")
+    print("Error: ",error)
+    time.sleep(2)
  
 
 my_post = [{"title":"title of post 1","content":"content of post 1","id":1},
@@ -36,7 +50,10 @@ async def root():
 
 @app.get("/posts")
 async def get_post():
-    return {"data":my_post}
+    cursor.execute("SELECT * FROM post")
+    posts = cursor.fetchall()
+    print(posts)
+    return {"data":posts}
 
 
 @app.get("/posts/{id}")
@@ -60,12 +77,15 @@ def create_posts(new_post:Post):
     print(new_post.dict())
     return {"data":f"{new_post}"}
 
-@app.post("/postsbydict" , status_code= status.HTTP_201_CREATED)
-def create_post_bydict(post:Post):
-    post_dict = post.dict()
-    post_dict['id'] = randrange(0,1000000)
-    my_post.append(post_dict)
-    return {"data":post_dict}
+@app.post("/postsbydb", status_code=status.HTTP_201_CREATED)
+def create_post_bydict(post: Post):
+    cursor.execute(
+        "INSERT INTO post (title, content, published) VALUES (%s, %s, %s) RETURNING *",
+        (post.title, post.content, post.published)
+    )
+    new_post = cursor.fetchone()
+    conn.commit()
+    return {"data": new_post}
 
 
 
