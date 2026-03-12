@@ -57,9 +57,11 @@ async def get_post():
 
 
 @app.get("/posts/{id}")
-def get_post(id):
-    print(id)
-    return {"Post_details": f"here is Post {id}"}
+def get_post(id:int):
+    cursor.execute("SELECT * from post WHERE id = %s",(str(id)))
+    post = cursor.fetchone()
+    print(post)
+    return {"Post_details": f"here is Post {post}"}
 
 
 @app.post("/createposts")
