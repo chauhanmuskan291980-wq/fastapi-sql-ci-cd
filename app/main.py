@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Body, Response , status , HTTPException
+from fastapi import FastAPI, Body, Response , status , HTTPException , Depends
 from pydantic import BaseModel
 from typing import Optional 
 from random import randrange
@@ -6,7 +6,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
 from . import models
-from .databse import engine , sessionLocal
+from .databse import engine , SessionLocal
 from sqlalchemy.orm import Session
 
 
@@ -15,7 +15,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 def get_db():
-    db = sessionLocal()
+    db = SessionLocal()
     try:
         yield db
     finally:
