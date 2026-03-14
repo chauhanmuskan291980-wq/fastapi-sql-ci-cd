@@ -1,13 +1,14 @@
 from fastapi import FastAPI, Body, Response , status , HTTPException , Depends
 from pydantic import BaseModel
-from typing import Optional 
+from typing import Optional , List 
 from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
-from . import models
+from . import models , schemas
 from .databse import engine , SessionLocal
 from sqlalchemy.orm import Session
+
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -21,10 +22,6 @@ def get_db():
     finally:
         db.close()
 
-class Post(BaseModel):
-    title: str
-    content:str
-    published: bool = True
 
 
 while True:
@@ -68,10 +65,10 @@ async def get_post():
     return {"data":posts}
 
 
-@app.get("/sqlalchemy")
+@app.get("/sqlalchemy" , response_model=List[schemas.Post])
 def test_posts(db:Session = Depends(get_db)):
     posts = db.query(models.Post).all()
-    return {"data": posts}
+    return posts
 
 
 
@@ -90,18 +87,18 @@ async def create_post(payload:dict = Body(...)):
 
 
 # title str , content str 
-@app.post("/createpost")
-def create_posts(post: Post, db: Session = Depends(get_db)):
+@app.post("/createpost" , response_model = schemas.Post)
+def create_posts(post: schemas.PostCreate , db: Session = Depends(get_db)):
     new_post = models.Post(**post.dict())
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
 
-    return {"data": new_post}
+    return new_post
 
 
 @app.post("/postsbydb", status_code=status.HTTP_201_CREATED)
-def create_post_bydict(post: Post):
+def create_post_bydict(post: schemas.PostCreate):
     cursor.execute(
         "INSERT INTO post (title, content, published) VALUES (%s, %s, %s) RETURNING *",
         (post.title, post.content, post.published)
@@ -148,7 +145,7 @@ def delete_post(id: int , db:Session = Depends(get_db)):
 
 
 @app.put("/post/updates/{id}")
-def update_post(id: int, post: Post , db:Session = Depends(get_db)):
+def update_post(id: int, post: schemas.PostCreate , db:Session = Depends(get_db)):
     update_post = db.query(models.Post).filter(models.Post.id == id)
     updated_post = update_post.first()
     if updated_post == "None":
