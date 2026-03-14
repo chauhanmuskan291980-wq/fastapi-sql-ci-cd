@@ -67,9 +67,14 @@ async def get_post():
     posts = cursor.fetchall()
     print(posts)
     return {"data":posts}
+
+
 @app.get("/sqlalchemy")
 def test_posts(db:Session = Depends(get_db)):
-    return {"status":"success"}
+    posts = db.query(models.Post).all()
+    return {"data": posts}
+
+
 
 @app.get("/posts/{id}")
 def get_post(id:int):
@@ -87,12 +92,14 @@ async def create_post(payload:dict = Body(...)):
 
 # title str , content str 
 @app.post("/createpost")
-def create_posts(new_post:Post):
-    print(new_post.title)
-    print(new_post.content)
-    print(new_post.publish)
-    print(new_post.dict())
-    return {"data":f"{new_post}"}
+def create_posts(post:Post , db:Session = Depends(get_db)):
+    new_post = models.Post(title = post.title , content = post.content , published = post.published)
+    db.add(new_post)
+    db.commit()
+    db.refresh(new_post)
+    return {"data":new_post}
+
+
 
 @app.post("/postsbydb", status_code=status.HTTP_201_CREATED)
 def create_post_bydict(post: Post):
