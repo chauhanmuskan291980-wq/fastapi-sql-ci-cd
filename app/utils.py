@@ -6,3 +6,5 @@ def hash(password:str):
     hashed_passowrd=pwd_context.hash(password)
     return hashed_passowrd
 
+def verify(plain_password , hashed_password ):
+    return pwd_context.verify(plain_password , hashed_password)
