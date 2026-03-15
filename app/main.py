@@ -156,3 +156,22 @@ def update_post(id: int, post: schemas.PostCreate , db:Session = Depends(get_db)
     update_post.update(post.dict() , synchronize_session=False)
     db.commit()
     return {"data":  update_post.first()}
+
+
+
+@app.post("/users" , status_code=status.HTTP_201_CREATED)
+def create_user(user:schemas.UserCreate, db:Session = Depends(get_db)):
+     new_user = models.User(**user.dict())
+     db.add(new_user)
+     db.commit()
+     db.refresh(new_user)
+
+     return new_user
+
+
+@app.get("/user" , status_code=status.HTTP_200_OK)
+def get_user(db:Session = Depends(get_db)):
+    findUser =  db.query(models.User).all()
+    print(findUser)
+    return findUser 
+
