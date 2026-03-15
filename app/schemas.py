@@ -21,3 +21,13 @@ class Post(PostBase):
 class UserCreate(BaseModel):
     email: EmailStr
     password : str
+
+
+class userOut(BaseModel):
+    id: int 
+    email : EmailStr
+    created_at : datetime
+
+    class Config:
+        from_attributes = True   
+
