@@ -1,20 +1,17 @@
-from fastapi import FastAPI, Body, Response , status , HTTPException , Depends , APIRouter
-from pydantic import BaseModel
-from typing import Optional , List 
-from random import randrange
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import time
-from .. import models , schemas , utils
-from ..databse import engine , SessionLocal
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
+from typing import List
+
+from .. import models, schemas
+from ..databse import SessionLocal
+
+router = APIRouter(
+    prefix="/posts",
+    tags=["Posts"]
+)
 
 
-models.Base.metadata.create_all(bind=engine)
-router = APIRouter()
-
-
+# Dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -22,52 +19,14 @@ def get_db():
     finally:
         db.close()
 
-while True:
- try:
-    conn = psycopg2.connect(host='localhost',database='posts',user='postgres',password='muskan!!!@00$',cursor_factory=RealDictCursor)
-    cursor = conn.cursor()
-    print("Datbase connection was successfull!")
-    break
- except Exception as error:
-    print("Connecting to databse failed ")
-    print("Error: ",error)
-    time.sleep(2)
 
-
-
-@router.get("/posts")
-async def get_post():
-    cursor.execute("SELECT * FROM post")
-    posts = cursor.fetchall()
-    print(posts)
-    return {"data":posts}
-
-
-@router.get("/sqlalchemy" , response_model=List[schemas.Post])
-def test_posts(db:Session = Depends(get_db)):
-    posts = db.query(models.Post).all()
-    return posts
-
-
-
-@router.get("/posts/{id}")
-def get_post(id:int):
-    cursor.execute("SELECT * from post WHERE id = %s",(str(id)))
-    post = cursor.fetchone()
-    print(post)
-    return {"Post_details": f"here is Post {post}"}
-
-
-@router.post("/createposts")
-async def create_post(payload:dict = Body(...)):
-    print(payload)
-    return {"new_post":f"title {payload['title']} content {payload['content']}"}
-
-
-# title str , content str 
-@router.post("/createpost" , response_model = schemas.Post)
-def create_posts(post: schemas.PostCreate , db: Session = Depends(get_db)):
+# -------------------------
+# 1️⃣ CREATE POST
+# -------------------------
+@router.post("/", response_model=schemas.Post, status_code=status.HTTP_201_CREATED)
+def create_post(post: schemas.PostCreate, db: Session = Depends(get_db)):
     new_post = models.Post(**post.dict())
+
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
@@ -75,57 +34,69 @@ def create_posts(post: schemas.PostCreate , db: Session = Depends(get_db)):
     return new_post
 
 
-@router.post("/postsbydb", status_code=status.HTTP_201_CREATED)
-def create_post_bydict(post: schemas.PostCreate):
-    cursor.execute(
-        "INSERT INTO post (title, content, published) VALUES (%s, %s, %s) RETURNING *",
-        (post.title, post.content, post.published)
-    )
-    new_post = cursor.fetchone()
-    conn.commit()
-    return {"data": new_post}
+# -------------------------
+# 2️⃣ READ ALL POSTS
+# -------------------------
+@router.get("/", response_model=List[schemas.Post])
+def get_posts(db: Session = Depends(get_db)):
+    posts = db.query(models.Post).all()
+    return posts
 
 
+# -------------------------
+# 3️⃣ READ SINGLE POST
+# -------------------------
+@router.get("/{id}", response_model=schemas.Post)
+def get_post(id: int, db: Session = Depends(get_db)):
 
-
-@router.get("/postsById/{id}")   #post parameter
-def get_post(id:int , resposnse : Response , db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == id).first()
-    print(post)
+
     if not post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail = f"post with id: {id} was not found")
-        # resposnse.status_code = status.HTTP_404_NOT_FOUND
-        # return {'message':f"post with id: {id} was not found"}
-    return {"post_details":post}
-
-
-
-@router.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int , db:Session = Depends(get_db)):
-    # cursor.execute("DELETE FROM post WHERE id = %s returning * ",(str(id)))
-    # deleted_post = cursor.fetchone()
-    # conn.commit()
-    delete_post =  db.query(models.Post).filter(models.Post.id == id)
-    deleted_post = delete_post.first()
-    if deleted_post == None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"post with id:{id} does not exits")
-    
-    delete_post.delete(synchronize_session=False)
-    db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@router.put("/post/updates/{id}")
-def update_post(id: int, post: schemas.PostCreate , db:Session = Depends(get_db)):
-    update_post = db.query(models.Post).filter(models.Post.id == id)
-    updated_post = update_post.first()
-    if updated_post == "None":
-     raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Post with id {id} does not exist"
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Post with id {id} not found"
         )
-    update_post.update(post.dict() , synchronize_session=False)
+
+    return post
+
+
+# -------------------------
+# 4️⃣ UPDATE POST
+# -------------------------
+@router.put("/{id}", response_model=schemas.Post)
+def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends(get_db)):
+
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    post = post_query.first()
+
+    if post is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Post with id {id} not found"
+        )
+
+    post_query.update(updated_post.dict(), synchronize_session=False)
     db.commit()
-    return {"data":  update_post.first()}
+
+    return post_query.first()
+
+
+# -------------------------
+# 5️⃣ DELETE POST
+# -------------------------
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(id: int, db: Session = Depends(get_db)):
+
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    post = post_query.first()
+
+    if post is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Post with id {id} not found"
+        )
+
+    post_query.delete(synchronize_session=False)
+    db.commit()
+
+    return
