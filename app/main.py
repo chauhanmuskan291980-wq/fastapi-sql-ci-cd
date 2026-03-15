@@ -183,3 +183,17 @@ def get_user(db:Session = Depends(get_db)):
     print(findUser)
     return findUser 
 
+
+@app.get("/user/{id}", status_code=status.HTTP_200_OK, response_model=schemas.userOut)
+def get_user(id: int, db: Session = Depends(get_db)):
+
+    findUserbyId = db.query(models.User).filter(models.User.id == id).first()
+
+    if not findUserbyId:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with id:{id} does not exist"
+        )
+
+    return findUserbyId
+
