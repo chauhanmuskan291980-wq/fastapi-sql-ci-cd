@@ -11,7 +11,7 @@ Oauth_schema = OAuth2PasswordBearer(tokenUrl='login')
 
 def create_access_token (data:dict):
     to_encode = data.copy()
-    expire = datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINTUES)
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINTUES)
 
     to_encode.update({"exp" : expire})
     JWTTOKEN = jwt.encode(to_encode , SECERT_KEY , algorithm=ALGORITHM)
@@ -29,9 +29,11 @@ def verify_access_token (token:str, credentials_exeception):
     
     except JWTError:
        raise credentials_exeception
+    
+    return token_data
 
 
-def get_current_user(token:str = Depends(Oauth_schema) ):
+def get_current_user(token:str = Depends(Oauth_schema)):
    credentials_exeception = HTTPException(status_code=status.HTTP_404_NOT_FOUND
                                           ,detail="Could not vaildate credtionals "
                                           , headers={"WWW-Authenticate":"Bearer"})
