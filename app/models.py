@@ -28,3 +28,9 @@ class User(Base):
         TIMESTAMP(timezone=True),
         server_default=text('now()')
     )
+
+
+class Vote(Base):
+    __tablename__ = "votes"
+    user_id = Column(Integer , ForeignKey("user.id" , ondelete="CASCADE"), primary_key=True)
+    post_id = Column(Integer , ForeignKey("newposts.id" , ondelete="CASCADE"), primary_key=True)
