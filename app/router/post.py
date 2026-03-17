@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session , relationship
-from typing import List
+from typing import List , Optional
 
 from .. import models, schemas 
 from . import Oauth2
@@ -42,6 +42,14 @@ def create_post(post: schemas.PostCreate, db: Session = Depends(get_db) , curren
 @router.get("/", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db) , current_user :int = Depends(Oauth2.get_current_user)):
     posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
+    return posts
+
+
+@router.get("/by", response_model=List[schemas.Post])
+def get_posts(db: Session = Depends(get_db) , current_user :int = Depends(Oauth2.get_current_user)
+              , limit: int = 10 , skip :int = 0, search : Optional[str] = ""
+              ):
+    posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip)
     return posts
 
 
