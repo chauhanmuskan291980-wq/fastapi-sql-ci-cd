@@ -27,7 +27,8 @@ def get_db():
 @router.post("/", response_model=schemas.Post, status_code=status.HTTP_201_CREATED)
 def create_post(post: schemas.PostCreate, db: Session = Depends(get_db) , current_user :int = Depends(Oauth2.get_current_user)):
     print(current_user.email)
-    new_post = models.Post(**post.dict())
+    new_post = models.Post(**post.dict(),
+                           owner_id = current_user.id)
     db.add(new_post)
     db.commit()
     db.refresh(new_post)

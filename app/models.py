@@ -1,5 +1,5 @@
 from .databse import Base
-from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, text
+from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, text , ForeignKey
 
 
 class Post(Base):
@@ -14,6 +14,8 @@ class Post(Base):
         nullable=False,
         server_default=text('true')
     )
+
+    owner_id = Column(Integer , ForeignKey("user.id" ,ondelete="CASCADE") , nullable=False)
 
 
 class User(Base):
