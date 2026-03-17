@@ -7,18 +7,6 @@ class PostBase(BaseModel):
     published: bool = True
 
 
-class PostCreate(PostBase):
-    pass
-
-
-class Post(PostBase):
-    id: int
-    owner_id : int 
-
-    class Config:
-        from_attributes = True
-
-
 class UserCreate(BaseModel):
     email: EmailStr
     password : str
@@ -37,6 +25,19 @@ class UserLogin(BaseModel):
     password : str
 
 
+class PostCreate(PostBase):
+    pass
+
+
+class Post(PostBase):
+    id: int
+    owner_id : int 
+    owner : userOut
+
+    class Config:
+        from_attributes = True
+
+ 
 
 class Token(BaseModel):
     access_token :str

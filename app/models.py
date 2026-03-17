@@ -1,6 +1,6 @@
 from .databse import Base
 from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, text , ForeignKey
-
+from sqlalchemy.orm import Session , relationship
 
 class Post(Base):
     __tablename__ = "newposts"
@@ -16,7 +16,7 @@ class Post(Base):
     )
 
     owner_id = Column(Integer , ForeignKey("user.id" ,ondelete="CASCADE") , nullable=False)
-
+    owner = relationship("User")
 
 class User(Base):
     __tablename__ = "user"
