@@ -35,8 +35,6 @@ def vote(
         models.Vote.user_id == current_user.id
     )
     found_vote = vote_query.first()
-
-    # 👍 ADD VOTE
     if vote.dir == 1:
         if found_vote:
             raise HTTPException(
@@ -53,7 +51,6 @@ def vote(
 
         return {"message": "Successfully added vote"}
 
-    # 👎 REMOVE VOTE
     else:
         if not found_vote:
             raise HTTPException(

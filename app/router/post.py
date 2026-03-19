@@ -5,7 +5,7 @@ from typing import List , Optional
 from .. import models, schemas 
 from . import Oauth2
 from ..databse import SessionLocal
-
+from sqlalchemy import func
 router = APIRouter(
     prefix="/posts",
     tags=["Posts"]
@@ -22,7 +22,7 @@ def get_db():
 
 
 # -------------------------
-# 1️⃣ CREATE POST
+# 1️ CREATE POST
 # -------------------------
 @router.post("/", response_model=schemas.Post, status_code=status.HTTP_201_CREATED)
 def create_post(post: schemas.PostCreate, db: Session = Depends(get_db) , current_user :int = Depends(Oauth2.get_current_user)):
@@ -37,13 +37,38 @@ def create_post(post: schemas.PostCreate, db: Session = Depends(get_db) , curren
 
 
 # -------------------------
-# 2️⃣ READ ALL POSTS
+# 2️ READ ALL POSTS
 # -------------------------
 @router.get("/", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db) , current_user :int = Depends(Oauth2.get_current_user)):
     posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
     return posts
 
+
+@router.get("/byVotes")
+def get_post_by_votes(
+    db: Session = Depends(get_db),
+    current_user: int = Depends(Oauth2.get_current_user)
+):
+    result = db.query(
+        models.Post,
+        func.count(models.Vote.post_id).label("votes")
+    ).join(
+        models.Vote,
+        models.Vote.post_id == models.Post.id,
+        isouter=True
+    ).group_by(models.Post.id).all()
+
+    response = []
+    for post, votes in result:
+        response.append({
+            "id": post.id,
+            "title": post.title,
+            "content": post.content,
+            "votes": votes
+        })
+
+    return response
 
 @router.get("/by", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db) , current_user :int = Depends(Oauth2.get_current_user)
@@ -54,7 +79,7 @@ def get_posts(db: Session = Depends(get_db) , current_user :int = Depends(Oauth2
 
 
 # -------------------------
-# 3️⃣ READ SINGLE POST
+# 3 READ SINGLE POST
 # -------------------------
 @router.get("/{id}", response_model=schemas.Post)
 def get_post(id: int, db: Session = Depends(get_db), current_user :int = Depends(Oauth2.get_current_user)):
@@ -71,7 +96,7 @@ def get_post(id: int, db: Session = Depends(get_db), current_user :int = Depends
 
 
 # -------------------------
-# 4️⃣ UPDATE POST
+# 4️ UPDATE POST
 # -------------------------
 @router.put("/{id}", response_model=schemas.Post)
 def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends(get_db) , current_user :int = Depends(Oauth2.get_current_user)):
@@ -96,7 +121,7 @@ def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends
 
 
 # -------------------------
-# 5️⃣ DELETE POST
+# 5️ DELETE POST
 # -------------------------
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int, db: Session = Depends(get_db), current_user :int = Depends(Oauth2.get_current_user)):
